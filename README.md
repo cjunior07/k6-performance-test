@@ -54,4 +54,114 @@ Para organização do sistema o mesmo foi separado em diversas pastas para que f
       - Dockerfile é o arquivo de configuração que é usado para construir uma imagem Docker. Ele contém uma série de instruções que são executadas sequencialmente pelo Docker para criar uma imagem.
            
 ## ⏩ Execução
+   - ### **1º Passo**
+        - ***Instale o Docker desktop + Docker Compose***
+          
+   - ### **2º Passo**
+        - ***Realize o upload dos conteiners InfluxDB e Grafana***
+          - ```docker-compose up -d influxdb grafana```
 
+   - ### **3º Passo**
+        - ***Realize o upload do conteiner k6***
+          - ```docker-compose run k6```
+
+   - ### **4º Passo**
+        - ***Realize o upload do conteiner k6 de acordo com a plataforma a ser testada***
+          - ```Para testes de API: k6-api
+               Para testes de Frontend: k6-front
+               Para testes de Kafka: k6-kafka
+               Para testes de SQS: k6-sqs
+               Para testes de Socket: k6-socket
+
+               docker-compose run opcao
+            ```
+  - ### **5º Passo**
+    - ***Execute um script básico***
+      - ```./k6 runscripts/postQA.js```
+
+
+## :chart_with_downwards_trend: Estratégias
+Hora de definir a estratégia e prosseguir para as execuções. Abaixo alguns exemplos e estratégias de testes a serem executadas:
+
+- ### **Smoke Test**
+  - ***Rodamos com o volume mínimo (5 usuários) para verificar se o sistema consegue lidar com essa carga antes de disparar outros tipos de testes.***
+    ```
+    5 usuários – 1 minuto
+    export const options = {
+      // Key configurations for test in this section
+      stages: [
+        { duration: '5s', target: 5 }, // traffic ramp-up from 1 to 5 users over 5 seconds.
+        { duration: '1m', target: 5 }, // stay at 5 users for 1 minute
+        { duration: '2s', target: 0 }, // ramp-down to 0 users
+      ],
+    };
+    ```
+
+- ### **Teste de Carga**
+  - ***Teste focado em validar se o sistema está preparado para suportar a quantidade de usuários esperados na aplicação em condições normais.***
+    ```
+    60 usuários – 5 minutos
+    60 usuários – 10 minutos
+    100 usuários – 3 minutos
+    60 usuários – 5 minutos
+    
+    export const options = {
+      // Key configurations for test in this section
+      stages: [
+        { duration: '5m', target: 60 }, // traffic ramp-up from 1 to 60 users over 5 minutes.
+        { duration: '10m', target: 60 }, // stay at 60 users for 10 minutes
+        { duration: '3m', target: 100 }, // ramp-up to 100 users
+        { duration: '5m', target: 60 }, // ramp-down to 60 users
+      ],
+    };
+    ```
+
+- ### **Teste de Stress Escalonado**
+  - **O foco deste teste é encontrar os limites do sistema. O propósito é verificar a estabilidade e confiabilidade do sistema em condições extremas.***
+    ```
+    100 usuários – 5 minutos
+    200 usuários – 5 minutos
+    300 usuários – 5 minutos
+    400 usuários – 5 minutos
+    
+    export const options = {
+      // Key configurations for test in this section
+      stages: [
+        { duration: '5m', target: 100 }, // traffic ramp-up from 1 to 100 users over 5 minutes.
+        { duration: '5m', target: 200 }, // traffic ramp-up from 1 to 200 users over 5 minutes.
+        { duration: '5m', target: 300 }, // traffic ramp-up from 1 to 300 users over 5 minutes.
+        { duration: '5m', target: 400 }, // traffic ramp-up from 1 to 400 users over 5 minutes.
+      ],
+    };
+    ```
+
+- ### **Teste de Spike (Pico)**
+  - ***É uma variação do teste de stress. A diferença é que a carga de usuários não é incrementada aos poucos, ao invés disso, a carga aumenta consideravelmente em um curto período.***
+    ```
+    100 usuários – 1 minuto
+    600 usuários – 3 minutos
+    100 usuários – 1 minuto
+    
+    export const options = {
+      // Key configurations for test in this section
+      stages: [
+        { duration: '1m', target: 100 }, // traffic ramp-up from 1 to 100 users over 1 minute.
+        { duration: '3m', target: 600 }, // traffic ramp-up from 100 to 600 users over 3 minutes.
+        { duration: '1m', target: 100 }, // traffic ramp-down from 600 to 100 users over 1 minute.
+      ],
+    };
+    ```
+
+- ### **Endurance Test**
+  - ***O objetivo deste teste é validar a confiabilidade do sistema por um longo período.***
+    ```
+    60 usuários – 5 horas
+
+    export const options = {
+      // Key configurations for test in this section
+      stages: [
+        { duration: '1m', target: 60 }, // traffic ramp-up from 1 to 60 users over 1 minute.
+        { duration: '5h', target: 60 }, // stay at 60 users for 5 hours
+      ],
+    };
+    ```

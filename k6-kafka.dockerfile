@@ -6,6 +6,7 @@ COPY . /base-apm-k6-qa
 USER root
 RUN apk update
 RUN apk upgrade
+RUN apk add git
 RUN apk add --no-cache tzdata
 ENV TZ=America/Sao_Paulo
 RUN apk add go
@@ -19,8 +20,8 @@ ENV PATH=$PATH:$GOBIN
 RUN chmod 777 -R /base-apm-k6-qa
 
 RUN mkdir -p /home/usr/local
-RUN go install go.k6.io/xk6/cmd/xk6@latest
-RUN xk6 build --with github.com/mostafa/xk6-kafka@latest \
-              --with github.com/szkiba/xk6-faker@latest
+RUN go install go.k6.io/xk6/cmd/xk6@v1.0.0
+RUN xk6 build --with github.com/mostafa/xk6-kafka@v1.0.0 \
+              --with github.com/grafana/xk6-faker@v0.4.4
 
 ENTRYPOINT [ "/bin/sh" ]
